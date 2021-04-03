@@ -1,5 +1,6 @@
 import utils, debug
 from config import *
+import llr
 
 import math
 import cv2, numpy as np
@@ -42,11 +43,11 @@ NC_SLID_CLAHE = [[3,   (2, 6),    5], # @1
 
 ################################################################################
 
-def slid_canny(img, sigma=0.25):
+def slid_canny(img, sigma=0.7):
 	"""apply Canny edge detector (automatic thresh)"""
 	v = np.median(img)
-	img = cv2.medianBlur(img, 5)
-	img = cv2.GaussianBlur(img, (7, 7), 2)
+	#img = cv2.medianBlur(img, 3)
+	img = cv2.GaussianBlur(img, (3, 3), 7)
 	lower = int(max(0, (1.0 - sigma) * v))
 	upper = int(min(255, (1.0 + sigma) * v))
 	return cv2.Canny(img, lower, upper)
@@ -54,7 +55,7 @@ def slid_canny(img, sigma=0.25):
 def slid_detector(img, alfa=150, beta=2):
 	"""detect lines using Hough algorithm"""
 	__lines, lines = [], cv2.HoughLinesP(img, rho=1, theta=np.pi/360*beta,
-		threshold=40, minLineLength=50, maxLineGap=15) # [40, 40, 10]
+		threshold=41, minLineLength=45, maxLineGap=9.5) # [40, 40, 10]
 	if lines is None: return []
 	for line in np.reshape(lines, (-1, 4)):
 		__lines += [[[int(line[0]), int(line[1])],

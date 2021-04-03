@@ -7,8 +7,8 @@ import collections, itertools, random, math
 from copy import copy
 na = np.array
 
-from slid import slid_tendency
-from laps import laps_intersections, laps_cluster
+import slid
+import laps
 
 ################################################################################
 
@@ -56,8 +56,8 @@ def llr_polyscore(cnt, pts, cen, alfa=5, beta=2):
 	pco.AddPath(cnt, pyclipper.JT_MITER, pyclipper.ET_CLOSEDPOLYGON)
 	pcnt = matplotlib.path.Path(pco.Execute(gamma)[0]) # FIXME: alfa/1.5
 	wtfs = pcnt.contains_points(pts)
-	pts_in = min(np.count_nonzero(wtfs), 49)
-	t1 = pts_in < min(len(pts), 49) - 2 * beta - 1
+	pts_in = min(np.count_nonzero(wtfs), 196)
+	t1 = pts_in < min(len(pts), 196) - 2 * beta - 1
 	if t1: return 0
 
 	A = pts_in
@@ -99,7 +99,6 @@ def llr_polyscore(cnt, pts, cen, alfa=5, beta=2):
 	cnt_in = __convex_approx(na(pcnt_in))
 	S = cv2.contourArea(na(cnt_in))
 	if S < B: E += abs(S - B)
-
 	cnt_in = __convex_approx(na(list(cnt_in)+list(cnt)))
 	S = cv2.contourArea(na(cnt_in))
 	if S > B: E += abs(S - B)
@@ -186,7 +185,7 @@ def LLR(img, points, lines):
 	# --- clustrowanie
 	import sklearn.cluster
 	__points = {}; points = llr_polysort(points); __max, __points_max = 0, []
-	alfa = math.sqrt(cv2.contourArea(na(points))/49)
+	alfa = math.sqrt(cv2.contourArea(na(points))/196)
 	X = sklearn.cluster.DBSCAN(eps=alfa*4).fit(points) # **(1.3)
 	for i in range(len(points)): __points[i] = []
 	for i in range(len(points)):
@@ -194,7 +193,7 @@ def LLR(img, points, lines):
 	for i in range(len(points)):
 		if len(__points[i]) > __max:
 			__max = len(__points[i]); __points_max = __points[i]
-	if len(__points) > 0 and len(points) > 49/2: points = __points_max
+	if len(__points) > 0 and len(points) > 196/2: points = __points_max
 	print(X.labels_)
 	# ---
 
@@ -202,7 +201,7 @@ def LLR(img, points, lines):
 	ring = __convex_approx(llr_polysort(points))
 
 	n = len(points); beta = n*(5/100) # beta=n*(100-(skutecznosc LAPS))
-	alfa = math.sqrt(cv2.contourArea(na(points))/49) # srednia otoczka siatki
+	alfa = math.sqrt(cv2.contourArea(na(points))/196) # srednia otoczka siatki
 
 	x = [p[0] for p in points]          # szukamy punktu
 	y = [p[1] for p in points]          # centralnego skupiska
@@ -334,7 +333,7 @@ def llr_pad(four_points, img):
 	print(utils.call("llr_pad(four_points)"));pco = pyclipper.PyclipperOffset()
 	pco.AddPath(four_points, pyclipper.JT_MITER, pyclipper.ET_CLOSEDPOLYGON)
 	
-	padded = pco.Execute(60)[0]
+	padded = pco.Execute(50)[0]
 	debug.image(img) \
 		.points(four_points, color=(0,0,255)) \
 		.points(padded, color=(0,255,0)) \
@@ -346,4 +345,4 @@ def llr_pad(four_points, img):
 				color=(255,255,255)) \
 	.save("llr_final_pad")
 
-	return pco.Execute(60)[0] # 60,70/75 is best (with buffer/for debug purpose)
+	return pco.Execute(50)[0] # 60,70/75 is best (with buffer/for debug purpose)
